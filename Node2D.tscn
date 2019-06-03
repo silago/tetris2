@@ -1,16 +1,107 @@
-[gd_scene load_steps=9 format=2]
+[gd_scene load_steps=11 format=2]
+
+[ext_resource path="res://block1.tscn" type="PackedScene" id=1]
+[ext_resource path="res://icon.png" type="Texture" id=2]
+
+[sub_resource type="GDScript" id=13]
+script/source = "extends Node2D
+
+# Declare member variables here. Examples:
+# var a = 2
+# var b = \"text\"
+const width = 720
+const tile_width = 45
+const tile_half_width = 22.5
+const y_pos = 1280
+const y_lines = 40
+const tiles_count = 16#width / tile_width
+const collision_layer = 2
+onready var pointPrefab = $point
+export(PackedScene) var prefab
+export var spawnInterval = 5
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	start_check_collision()
+	start_spawn()
+	pass # Replace with function body.
+
+
+func start_spawn():
+	while true:
+		randomize()
+		var color = Color(randf(),randf(),randf(),1)
+		yield(get_tree().create_timer(spawnInterval), \"timeout\")
+		var block = prefab.instance()
+		add_child(block)
+		block.position = Vector2(rand_range(50,577.5),0)
+		var r  = 90 * ( randi() % 4)
+		print(r)
+		block.rotation = deg2rad(r)
+		block.modulate = color
+		
+
+func start_check_collision():
+	while true:
+		yield(get_tree().create_timer(3), \"timeout\")
+		var y = 0
+		while y < y_lines:			
+			var space_state = get_world_2d().direct_space_state
+			# use global coordinates, not local to node
+			var collisions = []
+			var i = 0
+			while i < tiles_count:
+				var x = tile_width*i
+				var result = space_state.intersect_ray(Vector2(x, y_pos+2-y*tile_width), Vector2(x, y_pos-tile_half_width-y*tile_width),[],collision_layer)
+				#print(result)			
+				if result:		
+					#print(result)		
+					collisions.append(result)
+					#draw_point(result.position)
+				i+=1	
+			if tiles_count == len(collisions):
+				for collision in collisions:
+					var owner_id = collision.collider.shape_find_owner(collision.shape)
+					var owner = collision.collider.shape_owner_get_owner(owner_id)
+					if (owner):
+						owner.queue_free()			
+			collisions.clear()
+			y+=1
+func draw_point(pos):
+	var point = pointPrefab.duplicate()
+	add_child(point)
+	point.position = pos
+			"
+
+[sub_resource type="GDScript" id=10]
+script/source = "extends StaticBody2D
+
+# Declare member variables here. Examples:
+# var a = 2
+# var b = \"text\"
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	#pass # Replace with function body.
+	#connect(
+	pass
+#func _on_enter():
+#	pass
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+#func _process(delta):
+#	pass"
 
 [sub_resource type="RectangleShape2D" id=1]
-extents = Vector2( 507.1, 10 )
+extents = Vector2( 360, 8 )
 
-[sub_resource type="PhysicsMaterial" id=7]
-friction = 0.1
+[sub_resource type="RectangleShape2D" id=7]
+extents = Vector2( 507.1, 8 )
 
-[sub_resource type="RectangleShape2D" id=9]
+[sub_resource type="RectangleShape2D" id=8]
+extents = Vector2( 507.1, 8 )
 
 [sub_resource type="PhysicsMaterial" id=4]
 
-[sub_resource type="GDScript" id=3]
+[sub_resource type="GDScript" id=5]
 script/source = "extends RigidBody2D
 
 #########################################
@@ -35,21 +126,16 @@ var hit_timelimit=3.0
 
 
 # Movement Variables #
-var WALK_ATK = 300.0
-var WALK_DEC = 300.0
-var WALK_MAX_SPEED = 60.0
-var AIR_ATK = 150.0
-var AIR_DEC = 75.0
-var JUMP_VELOCITY = 130
-var STOP_JUMP_FORCE = 900.0
-var MAX_FLOOR_AIRBORNE_TIME = 0.15
-var airborne_time = 1e20
-var floor_h_velocity = 0.0
-
-var SPEAR_SPEED = 325.0
-var SPEAR_DROP = -35
-
-var respawn_point = Vector2(100,50)
+export var WALK_ATK = 300.0
+export var WALK_DEC = 300.0
+export var WALK_MAX_SPEED = 60.0
+export var AIR_ATK = 150.0
+export var AIR_DEC = 75.0
+export var JUMP_VELOCITY = 130
+export var STOP_JUMP_FORCE = 900.0
+export var MAX_FLOOR_AIRBORNE_TIME = 0.15
+export var airborne_time = 1e20
+export var floor_h_velocity = 0.0
 
 
 #################################
@@ -105,7 +191,7 @@ func _integrate_forces(state):
 	
 	#if we are airborne for a moment, we are no longer on_floor
 	var on_floor = airborne_time < MAX_FLOOR_AIRBORNE_TIME
-	print(airborne_time, \" :: \", MAX_FLOOR_AIRBORNE_TIME)
+	#print(airborne_time, \" :: \", MAX_FLOOR_AIRBORNE_TIME)
 	#  JUMPING  #
 	#############
 	if(is_jumping):
@@ -145,7 +231,7 @@ func _integrate_forces(state):
 			lv.x=sign(lv.x)*xv
 		
 		# Trigger Jump
-		print(is_jumping , did_jump , jump)
+		#print(is_jumping , did_jump , jump)
 		if (not is_jumping and not did_jump and jump):
 			lv.y=-JUMP_VELOCITY				#Apply velocity
 			is_jumping=true					#switch: we are jumping
@@ -225,84 +311,61 @@ func _ready():
 
 "
 
-[sub_resource type="CircleShape2D" id=8]
-
-[sub_resource type="GDScript" id=5]
-script/source = "extends KinematicBody2D
-
-# Declare member variables here. Examples:
-# var a = 2
-# var b = \"text\"
-
-# Called when the node enters the scene tree for the first time.
-func _ready():
-	pass # Replace with function body.
-
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-#func _process(delta):
-#	pass
-
-const GRAVITY = 20.0
-const WALK_SPEED = 20
-var on_floor = false
-
-var velocity = Vector2()
-func _physics_process(delta):
-	return
-	#if !on_floor:
-	velocity.y += delta * GRAVITY
-	if Input.is_action_pressed(\"ui_left\"):
-		velocity.x = -WALK_SPEED
-	elif Input.is_action_pressed(\"ui_right\"):
-		velocity.x =  WALK_SPEED
-	else:
-		velocity.x = 0
-	var col = move_and_collide(velocity,false)
-	if col:# and col.collider.name!=\"floor\":
-		velocity.y = 0
-		move_and_slide(velocity)
-			
-		"
-
-[sub_resource type="RectangleShape2D" id=6]
+[sub_resource type="CircleShape2D" id=6]
 
 [node name="Node2D" type="Node2D"]
+script = SubResource( 13 )
+prefab = ExtResource( 1 )
 
-[node name="floor" type="StaticBody2D" parent="."]
-position = Vector2( 0, 250 )
+[node name="point" type="Sprite" parent="."]
+scale = Vector2( 0.2, 0.2 )
+texture = ExtResource( 2 )
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="floor"]
-position = Vector2( -10, 0 )
-shape = SubResource( 1 )
-
-[node name="Camera2D" type="Camera2D" parent="floor"]
-position = Vector2( 0, -210 )
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2( 334, 859 )
 current = true
 
-[node name="RigidBody2D" type="RigidBody2D" parent="."]
-position = Vector2( -12, 220 )
-physics_material_override = SubResource( 7 )
+[node name="floor" type="StaticBody2D" parent="."]
+position = Vector2( 337.5, 1280 )
+script = SubResource( 10 )
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="RigidBody2D"]
-position = Vector2( -9, 0 )
-shape = SubResource( 9 )
+[node name="CollisionShape2D" type="CollisionShape2D" parent="floor"]
+shape = SubResource( 1 )
+
+[node name="left_border" type="StaticBody2D" parent="."]
+position = Vector2( -42.5, 790 )
+rotation = 1.5708
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="left_border"]
+position = Vector2( -9, -12 )
+shape = SubResource( 7 )
+
+[node name="left_border2" type="StaticBody2D" parent="."]
+position = Vector2( 677.5, 790 )
+rotation = 1.5708
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="left_border2"]
+position = Vector2( -9, -28 )
+shape = SubResource( 8 )
 
 [node name="Player" type="RigidBody2D" parent="."]
-position = Vector2( -39, 120 )
+editor/display_folded = true
+position = Vector2( 251, 790 )
 mode = 2
 physics_material_override = SubResource( 4 )
 contacts_reported = 2
 contact_monitor = true
 linear_damp = 1.0
 angular_damp = 1.0
-script = SubResource( 3 )
+script = SubResource( 5 )
+WALK_ATK = 1700.0
+WALK_DEC = 700.0
+WALK_MAX_SPEED = 220.0
+AIR_ATK = 300.0
+AIR_DEC = 600.0
+JUMP_VELOCITY = 530
+MAX_FLOOR_AIRBORNE_TIME = 0.5
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
-shape = SubResource( 8 )
-
-[node name="KinematicBody2D" type="KinematicBody2D" parent="."]
-position = Vector2( -80, -80 )
-script = SubResource( 5 )
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="KinematicBody2D"]
 shape = SubResource( 6 )
+
