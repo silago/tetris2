@@ -1,0 +1,308 @@
+[gd_scene load_steps=9 format=2]
+
+[sub_resource type="RectangleShape2D" id=1]
+extents = Vector2( 507.1, 10 )
+
+[sub_resource type="PhysicsMaterial" id=7]
+friction = 0.1
+
+[sub_resource type="RectangleShape2D" id=9]
+
+[sub_resource type="PhysicsMaterial" id=4]
+
+[sub_resource type="GDScript" id=3]
+script/source = "extends RigidBody2D
+
+#########################################
+#	Basic Character Motion				#
+#	based on the Demo by Juan Linietsky	#
+#########################################
+
+# Character States #
+var facing = 1
+
+# State Switches #
+var is_jumping = false
+var did_jump = false
+var stopping_jump=false
+var did_step = 0
+var did_shoot=false
+var is_hit=false
+
+# timers #
+var hit_timer=0
+var hit_timelimit=3.0
+
+
+# Movement Variables #
+var WALK_ATK = 300.0
+var WALK_DEC = 300.0
+var WALK_MAX_SPEED = 60.0
+var AIR_ATK = 150.0
+var AIR_DEC = 75.0
+var JUMP_VELOCITY = 130
+var STOP_JUMP_FORCE = 900.0
+var MAX_FLOOR_AIRBORNE_TIME = 0.15
+var airborne_time = 1e20
+var floor_h_velocity = 0.0
+
+var SPEAR_SPEED = 325.0
+var SPEAR_DROP = -35
+
+var respawn_point = Vector2(100,50)
+
+
+#################################
+#	Custom physics integration	#
+#################################
+func _integrate_forces(state):
+
+	var lv = state.get_linear_velocity()	#our current velocity
+	var step = state.get_step()				#time delta
+	
+
+	var new_facing = facing
+	
+	
+	
+
+	#  GET INPUT  #
+	###############
+	var move_left = Input.is_action_pressed('ui_left')
+	var move_right = Input.is_action_pressed('ui_right')
+	var jump = Input.is_action_pressed('ui_up')
+	#print(jump)
+	
+
+	#Deapply prev floor velocity
+	lv.x -= floor_h_velocity
+	floor_h_velocity = 0.0
+	
+	
+	
+	#  FLOOR COLLISION  #
+	#####################
+	var found_floor=false
+	var floor_index = -1
+	#print(state.get_contact_count())
+	for x in range(state.get_contact_count()):
+		var ci = state.get_contact_local_normal(x)
+		if (ci.dot(Vector2(0,-1))>0.6):		#check slope for 'floor'
+			found_floor = true
+			floor_index = x
+			
+	#We have landed on the floor
+	if (found_floor):
+		if (airborne_time > 0):
+			pass
+			#get_node('sound').play('land')
+		airborne_time=0.0
+		if (did_jump and not jump):
+			did_jump = false
+	#We are airborne
+	else:
+		airborne_time+=step		#time we spent in the air
+	
+	#if we are airborne for a moment, we are no longer on_floor
+	var on_floor = airborne_time < MAX_FLOOR_AIRBORNE_TIME
+	print(airborne_time, \" :: \", MAX_FLOOR_AIRBORNE_TIME)
+	#  JUMPING  #
+	#############
+	if(is_jumping):
+		if (lv.y>0):
+			#set off the jumping flag if we're going down
+			is_jumping=false
+		elif (not jump):
+			#we let go of jump, so make us drop (Metroid-style)
+			stopping_jump=true
+			
+		if (stopping_jump):
+			#push us downward if we are stop_jumping
+			lv.y += STOP_JUMP_FORCE*step
+	
+	
+	#  ON-FLOOR LOGIC  #
+	####################
+	#print(on_floor)
+	#is_on_fl
+	if (on_floor):
+		#we are moving left
+		if (move_left and not move_right):
+			if(lv.x > -WALK_MAX_SPEED):	#throttle control
+				lv.x += -WALK_ATK*step	#apply velocity
+				
+		#we are moving right
+		elif(move_right and not move_left):
+			if(lv.x < WALK_MAX_SPEED):	#throttle control
+				lv.x += WALK_ATK*step	#apply velocity
+				
+		#we are not moving, so decelerate
+		else:
+			var xv = abs(lv.x)
+			xv -= WALK_DEC*step
+			if (xv<0):
+				xv=0
+			lv.x=sign(lv.x)*xv
+		
+		# Trigger Jump
+		print(is_jumping , did_jump , jump)
+		if (not is_jumping and not did_jump and jump):
+			lv.y=-JUMP_VELOCITY				#Apply velocity
+			is_jumping=true					#switch: we are jumping
+			stopping_jump=false				#switch: we are not stop-jumping
+			did_jump = true					#switch: we did jump (and cannot again until we release the command)
+			
+		
+		# Get/Set Facing
+		# -1 = facing left
+		#  1 = facing right
+		if (lv.x < 0 and move_left):
+			new_facing = -1
+		elif (lv.x > 0 and move_right):
+			new_facing = 1
+			
+		#Set animation
+		#if (is_jumping):
+		#	new_animation='jumping'
+		#elif(abs(lv.x)<0.1):
+		#	new_animation='idle'
+		#else:
+		#	new_animation='running'
+	
+	#  IN-AIR LOGIC  #
+	##################
+	else:
+		#moving right in mid-air
+		if(move_left and not move_right):
+			if(lv.x > -WALK_MAX_SPEED):	#throttle control
+				lv.x -= AIR_ATK*step	#set velocity
+		
+		#moving left in mid-air
+		elif(move_right and not move_left):
+			if(lv.x < WALK_MAX_SPEED):	#throttle control
+				lv.x += AIR_ATK*step	#seet velocity
+		
+		#not moving in mid-air, so decelerate
+		else:
+			var xv = abs(lv.x)
+			xv -= AIR_DEC*step
+			if (xv<0):
+				xv=0
+			lv.x=sign(lv.x)*xv
+		
+	#Update sprite scale to reflect new facing
+	if(new_facing!=facing):
+		var sc = Vector2(-facing,1)
+		#get_node('Sprite').set_scale(sc)
+
+		facing = new_facing
+	
+	
+	#  APPLY VELOCITIES TO OUR RIGIDBODY  #
+	#######################################
+	if(found_floor):
+		#(not certain exactly what this does. it's important though!
+		floor_h_velocity = state.get_contact_collider_velocity_at_position(floor_index).x
+		lv.x += floor_h_velocity
+
+	#Finally, apply gravity and set back the linear velocity
+	lv += state.get_total_gravity()*step
+	state.set_linear_velocity(lv)
+	#print(lv)
+
+#	Hook for spear script:
+#	Our spear is freed, so we can fire another
+func done_shooting():
+	did_shoot = false
+
+
+	
+func _ready():
+	# Initialize
+	set_process(true)
+
+
+
+"
+
+[sub_resource type="CircleShape2D" id=8]
+
+[sub_resource type="GDScript" id=5]
+script/source = "extends KinematicBody2D
+
+# Declare member variables here. Examples:
+# var a = 2
+# var b = \"text\"
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	pass # Replace with function body.
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+#func _process(delta):
+#	pass
+
+const GRAVITY = 20.0
+const WALK_SPEED = 20
+var on_floor = false
+
+var velocity = Vector2()
+func _physics_process(delta):
+	return
+	#if !on_floor:
+	velocity.y += delta * GRAVITY
+	if Input.is_action_pressed(\"ui_left\"):
+		velocity.x = -WALK_SPEED
+	elif Input.is_action_pressed(\"ui_right\"):
+		velocity.x =  WALK_SPEED
+	else:
+		velocity.x = 0
+	var col = move_and_collide(velocity,false)
+	if col:# and col.collider.name!=\"floor\":
+		velocity.y = 0
+		move_and_slide(velocity)
+			
+		"
+
+[sub_resource type="RectangleShape2D" id=6]
+
+[node name="Node2D" type="Node2D"]
+
+[node name="floor" type="StaticBody2D" parent="."]
+position = Vector2( 0, 250 )
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="floor"]
+position = Vector2( -10, 0 )
+shape = SubResource( 1 )
+
+[node name="Camera2D" type="Camera2D" parent="floor"]
+position = Vector2( 0, -210 )
+current = true
+
+[node name="RigidBody2D" type="RigidBody2D" parent="."]
+position = Vector2( -12, 220 )
+physics_material_override = SubResource( 7 )
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="RigidBody2D"]
+position = Vector2( -9, 0 )
+shape = SubResource( 9 )
+
+[node name="Player" type="RigidBody2D" parent="."]
+position = Vector2( -39, 120 )
+mode = 2
+physics_material_override = SubResource( 4 )
+contacts_reported = 2
+contact_monitor = true
+linear_damp = 1.0
+angular_damp = 1.0
+script = SubResource( 3 )
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
+shape = SubResource( 8 )
+
+[node name="KinematicBody2D" type="KinematicBody2D" parent="."]
+position = Vector2( -80, -80 )
+script = SubResource( 5 )
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="KinematicBody2D"]
+shape = SubResource( 6 )
