@@ -1,19 +1,54 @@
-[gd_scene load_steps=3 format=2]
+[gd_scene load_steps=5 format=2]
 
 [ext_resource path="res://icon.png" type="Texture" id=1]
 
-[sub_resource type="RectangleShape2D" id=9]
+[sub_resource type="PhysicsMaterial" id=3]
+rough = true
+
+[sub_resource type="GDScript" id=2]
+script/source = "extends RigidBody2D
+
+# Declare member variables here. Examples:
+# var a = 2
+# var b = \"text\"
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	pass # Replace with function body.
+
+func _physics_process(delta):
+	#inertia = 0
+	pass
+	
+func _integrate_forces(state):
+	var lv = state.get_linear_velocity()
+	print(lv.x)
+	if lv.x >20:
+		lv.x == 20
+	if lv.x < 10:
+		lv.x = 0
+	lv.x = 0
+	state.set_linear_velocity(lv)
+		
+	pass"
+
+[sub_resource type="RectangleShape2D" id=1]
 extents = Vector2( 22.5, 22.5 )
 
 [node name="block1" type="RigidBody2D"]
-editor/display_folded = true
-position = Vector2( 0, 1011 )
+position = Vector2( 113.72, 1069.3 )
 collision_layer = 3
 collision_mask = 3
 mode = 2
+mass = 0.7
+physics_material_override = SubResource( 3 )
+gravity_scale = 2.0
+linear_damp = 1.0
+angular_damp = 1.0
+script = SubResource( 2 )
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-shape = SubResource( 9 )
+shape = SubResource( 1 )
 
 [node name="Sprite" type="Sprite" parent="CollisionShape2D"]
 scale = Vector2( 0.7, 0.7 )
@@ -21,7 +56,7 @@ texture = ExtResource( 1 )
 
 [node name="CollisionShape2D2" type="CollisionShape2D" parent="."]
 position = Vector2( 45, 0 )
-shape = SubResource( 9 )
+shape = SubResource( 1 )
 
 [node name="Sprite2" type="Sprite" parent="CollisionShape2D2"]
 scale = Vector2( 0.7, 0.7 )
@@ -29,7 +64,7 @@ texture = ExtResource( 1 )
 
 [node name="CollisionShape2D3" type="CollisionShape2D" parent="."]
 position = Vector2( 90, 0 )
-shape = SubResource( 9 )
+shape = SubResource( 1 )
 
 [node name="Sprite3" type="Sprite" parent="CollisionShape2D3"]
 scale = Vector2( 0.7, 0.7 )
@@ -37,9 +72,8 @@ texture = ExtResource( 1 )
 
 [node name="CollisionShape2D4" type="CollisionShape2D" parent="."]
 position = Vector2( 90, -45 )
-shape = SubResource( 9 )
+shape = SubResource( 1 )
 
 [node name="Sprite4" type="Sprite" parent="CollisionShape2D4"]
 scale = Vector2( 0.7, 0.7 )
 texture = ExtResource( 1 )
-

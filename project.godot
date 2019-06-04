@@ -19,15 +19,9 @@ config/name="New Game Project"
 run/main_scene="res://Node2D.tscn"
 config/icon="res://icon.png"
 
-[display]
+[physics]
 
-window/size/width=720
-window/size/height=1280
-window/size/test_width=720
-window/size/test_height=1280
-window/handheld/orientation="portrait"
-window/stretch/mode="viewport"
-window/stretch/aspect="keep_width"
+2d/default_linear_damp=0.0
 
 [rendering]
 

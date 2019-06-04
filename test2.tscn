@@ -1,0 +1,58 @@
+[gd_scene load_steps=5 format=2]
+
+[sub_resource type="RectangleShape2D" id=1]
+extents = Vector2( 1203.69, 10 )
+
+[sub_resource type="GDScript" id=4]
+script/source = "extends KinematicBody2D
+
+var speed = 250
+var velocity = Vector2()
+
+func get_input():
+	# Detect up/down/left/right keystate and only move when pressed.
+	velocity = Vector2()
+	if Input.is_action_pressed('ui_right'):
+		velocity.x += 1
+	if Input.is_action_pressed('ui_left'):
+		velocity.x -= 1
+	if Input.is_action_pressed('ui_down'):
+		velocity.y += 1
+	if Input.is_action_pressed('ui_up'):
+		velocity.y -= 1
+	velocity = velocity.normalized() * speed
+
+func _physics_process(delta):
+	get_input()
+	var collision = move_and_collide(velocity * delta,true)
+	if (collision and collision.collider is KinematicBody2D):
+		print(collision)
+		collision.collider.move_and_collide(velocity * delta,true)
+"
+
+[sub_resource type="CircleShape2D" id=2]
+radius = 29.0362
+
+[sub_resource type="CircleShape2D" id=3]
+radius = 21.9385
+
+[node name="Node2D" type="Node2D"]
+
+[node name="StaticBody2D" type="StaticBody2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D"]
+position = Vector2( 510, 610 )
+shape = SubResource( 1 )
+
+[node name="Player" type="KinematicBody2D" parent="."]
+position = Vector2( 160, 570 )
+script = SubResource( 4 )
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
+shape = SubResource( 2 )
+
+[node name="KinematicBody2D2" type="KinematicBody2D" parent="."]
+position = Vector2( 250, 570 )
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="KinematicBody2D2"]
+shape = SubResource( 3 )
