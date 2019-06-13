@@ -1,7 +1,8 @@
-[gd_scene load_steps=11 format=2]
+[gd_scene load_steps=9 format=2]
 
 [ext_resource path="res://block1.tscn" type="PackedScene" id=1]
 [ext_resource path="res://icon.png" type="Texture" id=2]
+[ext_resource path="res://KinemticPlayer.tscn" type="PackedScene" id=3]
 
 [sub_resource type="GDScript" id=1]
 script/source = "extends Node2D
@@ -36,7 +37,7 @@ func start_spawn():
 		add_child(block)
 		block.position = Vector2(rand_range(50,577.5),0)
 		var r  = 90 * ( randi() % 4)
-		print(r)
+		#print(r)
 		block.rotation = deg2rad(r)
 		block.modulate = color
 		
@@ -93,7 +94,7 @@ func _ready():
 #	pass"
 
 [sub_resource type="RectangleShape2D" id=3]
-extents = Vector2( 360, 8 )
+extents = Vector2( 360, 83.1329 )
 
 [sub_resource type="RectangleShape2D" id=4]
 extents = Vector2( 507.1, 8 )
@@ -101,238 +102,28 @@ extents = Vector2( 507.1, 8 )
 [sub_resource type="RectangleShape2D" id=5]
 extents = Vector2( 507.1, 8 )
 
-[sub_resource type="PhysicsMaterial" id=6]
-
-[sub_resource type="GDScript" id=7]
-script/source = "extends RigidBody2D
-
-#########################################
-#	Basic Character Motion				#
-#	based on the Demo by Juan Linietsky	#
-#########################################
-
-# Character States #
-var facing = 1
-
-# State Switches #
-var is_jumping = false
-var did_jump = false
-var stopping_jump=false
-var did_step = 0
-var did_shoot=false
-var is_hit=false
-
-# timers #
-var hit_timer=0
-var hit_timelimit=3.0
-
-
-# Movement Variables #
-export var WALK_ATK = 300.0
-export var WALK_DEC = 300.0
-export var WALK_MAX_SPEED = 60.0
-export var AIR_ATK = 150.0
-export var AIR_DEC = 75.0
-export var JUMP_VELOCITY = 130
-export var STOP_JUMP_FORCE = 900.0
-export var MAX_FLOOR_AIRBORNE_TIME = 0.15
-export var airborne_time = 1e20
-export var floor_h_velocity = 0.0
-
-
-#################################
-#	Custom physics integration	#
-#################################
-func _integrate_forces(state):
-
-	var lv = state.get_linear_velocity()	#our current velocity
-	var step = state.get_step()				#time delta
-	
-
-	var new_facing = facing
-	
-	
-	
-
-	#  GET INPUT  #
-	###############
-	var move_left = Input.is_action_pressed('ui_left')
-	var move_right = Input.is_action_pressed('ui_right')
-	var jump = Input.is_action_pressed('ui_up')
-	#print(jump)
-	
-
-	#Deapply prev floor velocity
-	lv.x -= floor_h_velocity
-	floor_h_velocity = 0.0
-	
-	
-	
-	#  FLOOR COLLISION  #
-	#####################
-	var found_floor=false
-	var floor_index = -1
-	#print(state.get_contact_count())
-	for x in range(state.get_contact_count()):
-		var ci = state.get_contact_local_normal(x)
-		if (ci.dot(Vector2(0,-1))>0.6):		#check slope for 'floor'
-			found_floor = true
-			floor_index = x
-			
-	#We have landed on the floor
-	if (found_floor):
-		if (airborne_time > 0):
-			pass
-			#get_node('sound').play('land')
-		airborne_time=0.0
-		if (did_jump and not jump):
-			did_jump = false
-	#We are airborne
-	else:
-		airborne_time+=step		#time we spent in the air
-	
-	#if we are airborne for a moment, we are no longer on_floor
-	var on_floor = airborne_time < MAX_FLOOR_AIRBORNE_TIME
-	#print(airborne_time, \" :: \", MAX_FLOOR_AIRBORNE_TIME)
-	#  JUMPING  #
-	#############
-	if(is_jumping):
-		if (lv.y>0):
-			#set off the jumping flag if we're going down
-			is_jumping=false
-		elif (not jump):
-			#we let go of jump, so make us drop (Metroid-style)
-			stopping_jump=true
-			
-		if (stopping_jump):
-			#push us downward if we are stop_jumping
-			lv.y += STOP_JUMP_FORCE*step
-	
-	
-	#  ON-FLOOR LOGIC  #
-	####################
-	#print(on_floor)
-	#is_on_fl
-	if (on_floor):
-		#we are moving left
-		if (move_left and not move_right):
-			if(lv.x > -WALK_MAX_SPEED):	#throttle control
-				lv.x += -WALK_ATK*step	#apply velocity
-				
-		#we are moving right
-		elif(move_right and not move_left):
-			if(lv.x < WALK_MAX_SPEED):	#throttle control
-				lv.x += WALK_ATK*step	#apply velocity
-				
-		#we are not moving, so decelerate
-		else:
-			var xv = abs(lv.x)
-			xv -= WALK_DEC*step
-			if (xv<0):
-				xv=0
-			lv.x=sign(lv.x)*xv
-		
-		# Trigger Jump
-		#print(is_jumping , did_jump , jump)
-		if (not is_jumping and not did_jump and jump):
-			lv.y=-JUMP_VELOCITY				#Apply velocity
-			is_jumping=true					#switch: we are jumping
-			stopping_jump=false				#switch: we are not stop-jumping
-			did_jump = true					#switch: we did jump (and cannot again until we release the command)
-			
-		
-		# Get/Set Facing
-		# -1 = facing left
-		#  1 = facing right
-		if (lv.x < 0 and move_left):
-			new_facing = -1
-		elif (lv.x > 0 and move_right):
-			new_facing = 1
-			
-		#Set animation
-		#if (is_jumping):
-		#	new_animation='jumping'
-		#elif(abs(lv.x)<0.1):
-		#	new_animation='idle'
-		#else:
-		#	new_animation='running'
-	
-	#  IN-AIR LOGIC  #
-	##################
-	else:
-		#moving right in mid-air
-		if(move_left and not move_right):
-			if(lv.x > -WALK_MAX_SPEED):	#throttle control
-				lv.x -= AIR_ATK*step	#set velocity
-		
-		#moving left in mid-air
-		elif(move_right and not move_left):
-			if(lv.x < WALK_MAX_SPEED):	#throttle control
-				lv.x += AIR_ATK*step	#seet velocity
-		
-		#not moving in mid-air, so decelerate
-		else:
-			var xv = abs(lv.x)
-			xv -= AIR_DEC*step
-			if (xv<0):
-				xv=0
-			lv.x=sign(lv.x)*xv
-		
-	#Update sprite scale to reflect new facing
-	if(new_facing!=facing):
-		var sc = Vector2(-facing,1)
-		#get_node('Sprite').set_scale(sc)
-
-		facing = new_facing
-	
-	
-	#  APPLY VELOCITIES TO OUR RIGIDBODY  #
-	#######################################
-	if(found_floor):
-		#(not certain exactly what this does. it's important though!
-		floor_h_velocity = state.get_contact_collider_velocity_at_position(floor_index).x
-		lv.x += floor_h_velocity
-	if (!found_floor and !is_jumping):
-		#pass
-		lv.y=JUMP_VELOCITY
-	#Finally, apply gravity and set back the linear velocity
-	lv += state.get_total_gravity()*step
-	state.set_linear_velocity(lv)
-	#print(lv)
-#	Hook for spear script:
-#	Our spear is freed, so we can fire another
-func done_shooting():
-	did_shoot = false
-
-
-	
-func _ready():
-	# Initialize
-	set_process(true)
-
-
-
-"
-
-[sub_resource type="CircleShape2D" id=8]
-
 [node name="Node2D" type="Node2D"]
 script = SubResource( 1 )
 prefab = ExtResource( 1 )
 
+[node name="Player" parent="." instance=ExtResource( 3 )]
+position = Vector2( 130, 880 )
+
+[node name="Camera2D" type="Camera2D" parent="Player"]
+position = Vector2( 4, -211 )
+current = true
+zoom = Vector2( 2, 2 )
+
 [node name="point" type="Sprite" parent="."]
 scale = Vector2( 0.2, 0.2 )
 texture = ExtResource( 2 )
-
-[node name="Camera2D" type="Camera2D" parent="."]
-position = Vector2( 334, 859 )
-current = true
 
 [node name="floor" type="StaticBody2D" parent="."]
 position = Vector2( 337.5, 1280 )
 script = SubResource( 2 )
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="floor"]
+position = Vector2( 0, 25 )
 shape = SubResource( 3 )
 
 [node name="left_border" type="StaticBody2D" parent="."]
@@ -351,27 +142,5 @@ rotation = 1.5708
 position = Vector2( -9, -28 )
 shape = SubResource( 5 )
 
-[node name="block1" parent="." instance=ExtResource( 1 )]
-mass = 2.0
-
-[node name="Player" type="RigidBody2D" parent="."]
-position = Vector2( 251, 1160 )
-mode = 2
-physics_material_override = SubResource( 6 )
-contacts_reported = 3
-contact_monitor = true
-linear_damp = 1.0
-angular_damp = 1.0
-script = SubResource( 7 )
-WALK_ATK = 5700.0
-WALK_DEC = 700.0
-WALK_MAX_SPEED = 320.0
-AIR_ATK = 300.0
-AIR_DEC = 900.0
-JUMP_VELOCITY = 530
-MAX_FLOOR_AIRBORNE_TIME = 0.5
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
-shape = SubResource( 8 )
-
-[editable path="block1"]
+[node name="KinematicBody2D" parent="." instance=ExtResource( 1 )]
+position = Vector2( 85.3552, 1059.93 )
