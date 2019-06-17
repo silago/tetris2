@@ -22,8 +22,8 @@ export(PackedScene) var prefab
 export var spawnInterval = 5
 # Called when the node enters the scene tree for the first time.
 func _ready():
-	start_check_collision()
-	start_spawn()
+	#start_check_collision()
+	#start_spawn()
 	pass # Replace with function body.
 
 
@@ -107,7 +107,7 @@ script = SubResource( 1 )
 prefab = ExtResource( 1 )
 
 [node name="Player" parent="." instance=ExtResource( 3 )]
-position = Vector2( 130, 880 )
+position = Vector2( 130, 1140 )
 
 [node name="Camera2D" type="Camera2D" parent="Player"]
 position = Vector2( 4, -211 )
@@ -143,4 +143,7 @@ position = Vector2( -9, -28 )
 shape = SubResource( 5 )
 
 [node name="KinematicBody2D" parent="." instance=ExtResource( 1 )]
-position = Vector2( 85.3552, 1059.93 )
+position = Vector2( 205.355, 1169.93 )
+
+[node name="KinematicBody2D2" parent="." instance=ExtResource( 1 )]
+position = Vector2( 365.355, 1169.93 )

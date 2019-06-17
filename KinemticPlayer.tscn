@@ -3,36 +3,46 @@
 [sub_resource type="GDScript" id=1]
 script/source = "extends KinematicBody2D
 
-var speed = 250
+const GRAVITY = 200.0
+const WALK_SPEED = 200
 var velocity = Vector2()
 
-func get_input():
-	# Detect up/down/left/right keystate and only move when pressed.
-	velocity = Vector2()
-	velocity.y+=1
-	if Input.is_action_pressed('ui_right'):
-		velocity.x += 1
-	if Input.is_action_pressed('ui_left'):
-		velocity.x -= 1
-	#if Input.is_action_pressed('ui_down'):
-	#	velocity.y += 1
-	if Input.is_action_pressed('ui_up'):
-		velocity.y -= 50
-	velocity = velocity.normalized() * speed
+var push_force = Vector2(20,0)
 
 func _physics_process(delta):
-	get_input()
+	velocity.y += delta * GRAVITY
+	if Input.is_action_pressed(\"ui_up\"):
+		velocity.y = -200
+	if Input.is_action_pressed(\"ui_left\"):
+		velocity.x = -WALK_SPEED
+	elif Input.is_action_pressed(\"ui_right\"):
+		velocity.x =  WALK_SPEED
+	else:
+		velocity.x = 0
+
+	var v = move_and_slide(velocity, Vector2(0, -1))
+	if v.x == 0 and velocity.x!=0:
+		var collision = move_and_collide(Vector2(velocity.x*delta,0))
+		if collision.collider.has_method(\"move\"):
+			print(velocity)
+			collision.collider.move(Vector2(velocity.x*delta,0))
+
+func __physics_process(delta):
+	#get_input()
 	var velocity_y = velocity.y
 	var velocity_x = velocity.x
 	#velocity.x = 0
-	move_and_collide(Vector2(0,velocity_y)* delta)
-	
-	var collision = move_and_collide(Vector2(velocity_x,0) * delta,true)
-	if collision and collision.position.y > global_position.y:
+	#move_and_collide(Vector2(0,velocity_y)* delta)
+	print(velocity)
+	var collision = move_and_collide(Vector2(velocity_x,velocity_y) * delta,true)
+	# if floor
+	if collision and collision.position.y < global_position.y:
 		velocity.y = 0
-		collision = move_and_collide(Vector2(velocity_x,0) * delta,true)	
-	if (collision and collision.collider is KinematicBody2D):
-		collision.collider.move_and_collide(Vector2(velocity_x,0) * delta,true)
+		return
+		
+	if collision and collision.position.y > global_position.y:
+		if collision.collider.has_method(\"move\"):
+			collision.collider.move(velocity)
 "
 
 [sub_resource type="CircleShape2D" id=2]
