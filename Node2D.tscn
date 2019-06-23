@@ -19,11 +19,11 @@ const tiles_count = 16#width / tile_width
 const collision_layer = 2
 onready var pointPrefab = $point
 export(PackedScene) var prefab
-export var spawnInterval = 5
+export var spawnInterval = 10
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	#start_check_collision()
-	#start_spawn()
+	start_spawn()
 	pass # Replace with function body.
 
 
@@ -97,10 +97,10 @@ func _ready():
 extents = Vector2( 360, 83.1329 )
 
 [sub_resource type="RectangleShape2D" id=4]
-extents = Vector2( 507.1, 8 )
+extents = Vector2( 507.1, 35.8433 )
 
 [sub_resource type="RectangleShape2D" id=5]
-extents = Vector2( 507.1, 8 )
+extents = Vector2( 507.1, 35.0447 )
 
 [node name="Node2D" type="Node2D"]
 script = SubResource( 1 )
@@ -131,7 +131,7 @@ position = Vector2( -42.5, 790 )
 rotation = 1.5708
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="left_border"]
-position = Vector2( -9, -12 )
+position = Vector2( -8.99994, 7 )
 shape = SubResource( 4 )
 
 [node name="left_border2" type="StaticBody2D" parent="."]
@@ -139,11 +139,11 @@ position = Vector2( 677.5, 790 )
 rotation = 1.5708
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="left_border2"]
-position = Vector2( -9, -28 )
+position = Vector2( -9.00006, -54 )
 shape = SubResource( 5 )
 
 [node name="KinematicBody2D" parent="." instance=ExtResource( 1 )]
-position = Vector2( 205.355, 1169.93 )
+position = Vector2( 205.355, 998.93 )
 
 [node name="KinematicBody2D2" parent="." instance=ExtResource( 1 )]
-position = Vector2( 365.355, 1169.93 )
+position = Vector2( 215.355, 469.93 )
